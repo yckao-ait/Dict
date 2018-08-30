@@ -21,6 +21,9 @@ T = Text(root, height=25, width=200,font=("新細明體",12,"normal"))
 T.pack()
 T.insert(END,"將翻譯文字拷貝至剪貼簿再執行智能翻譯\n")
 T.insert(END,"Copy text to clipboard and start translation\n")
+# Moved btn text to global
+autoSwitchBtn_text = StringVar()
+bilinSwitchBtn_text = StringVar()
 
 s = requests.Session()
 m = hashlib.md5()
@@ -124,6 +127,8 @@ class Window(Frame):
       #執行init_window()
         self.init_window()
         self._isAuto = False
+        self._isBilingual = False
+        self._lastTranslated = ""
 
     #init_window（） and init windows control
     def init_window(self):
@@ -133,28 +138,44 @@ class Window(Frame):
         self.pack(fill=BOTH, expand=1)
         # create button
         translateButton = Button(self, text="Translate(智能翻譯)",command=self.client_translate)
-        autostartButton = Button(self, text="Auto Translate",command=self.client_auto_start)
-        autostopButton = Button(self, text="Stop Translate",command=self.client_auto_stop)
+        
+        global autoSwitchBtn_text
+        global bilinSwitchBtn_text
+
+        autoSwitchButton = Button(self, textvariable=autoSwitchBtn_text,command=self.client_auto_switch)
+        autoSwitchBtn_text.set("Auto Translation On")
+
+        bilinSwitchButton = Button(self,textvariable=bilinSwitchBtn_text,command=self.client_auto_bilingual)
+        bilinSwitchBtn_text.set("Binlingual On")
+
         quitButton = Button(self, text="Quit",command=self.client_exit)
         # place button in window
         translateButton.place(x=00,y=0)
-        autostartButton.place(x=150, y=0)
-        autostopButton.place(x=300, y=0)
+        autoSwitchButton.place(x=150, y=0)
+        bilinSwitchButton.place(x=300, y=0)
         quitButton.place(x=450, y=0)
 
     def client_translate(self):
         global dic
         global root
 
+        
         #T.delete(0,END)
-        T.delete(1.0,END)
-
         print("Start Translate\n")
         #pyperclip.copy("""今天天氣如何""")
         msg = pyperclip.paste()
         if msg == "" :
             msg = """今天天氣如何"""
+
         
+        if self._lastTranslated==msg:
+            if self._isAuto == True:
+                # keep doing auto translation
+                self._timer = threading.Timer(8.0,self.client_translate)
+                self._timer.start()
+            return
+        
+        T.delete(1.0,END)
         translatedMsg = dic.translateFinal(msg)
         #line = Converter('zh-hans').convert(line.decode('utf-8'))
         #line = line.encode('utf-8')
@@ -163,25 +184,46 @@ class Window(Frame):
         #print(translatedMsg)
         print(chtMsg)
 
+        self._lastTranslated = msg
         #T.insert(END,translatedMsg)
+        if self._isBilingual==True:
+            T.insert(END,msg+"\n")
+
         T.insert(END,chtMsg)
 
-    def client_auto_start(self):
-        self._timer = threading.Timer(8.0,self.client_auto_start)
-        self._timer.start()
-        self._isAuto = True
-        print("start auto translation\n")
-        self.client_translate()
-        
+        if self._isAuto == True:
+            # keep doing auto translation
+            self._timer = threading.Timer(8.0,self.client_translate)
+            self._timer.start()  
+
+    def client_auto_switch(self):
+        global autoSwitchBtn_text
+        global bilinSwitchBtn_text
+        if self._isAuto == False:
+            self._timer = threading.Timer(8.0,self.client_translate)
+            self._timer.start()
+            self._isAuto = True
+            autoSwitchBtn_text.set("Auto Translation OFF")
+            print("start auto translation\n")
+        else:
+            self._isAuto = False
+            self._timer.cancel()
+            autoSwitchBtn_text.set("Auto Translation On")
+                        
         #global root
         #root.lift()
     
-    def client_auto_stop(self):
-        if self._isAuto == True:
-            self._timer.cancel()
-            self._isAuto = False
-
-        print("stop auto translation\n")
+    def client_auto_bilingual(self):
+        global autoSwitchBtn_text
+        global bilinSwitchBtn_text
+        if self._isBilingual == False:
+            self._isBilingual = True
+            bilinSwitchBtn_text.set("Binlingual OFF")
+            print("bilingual ON")
+        else:    
+            self._isBilingual = False
+            bilinSwitchBtn_text.set("Binlingual On")
+            print("binlingual OFF")
 
     def client_exit(self):
         exit()
