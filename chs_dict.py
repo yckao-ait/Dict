@@ -171,7 +171,7 @@ class Window(Frame):
         if self._lastTranslated==msg:
             if self._isAuto == True:
                 # keep doing auto translation
-                self._timer = threading.Timer(8.0,self.client_translate)
+                self._timer = threading.Timer(2.0,self.client_translate)
                 self._timer.start()
             return
         
@@ -193,14 +193,14 @@ class Window(Frame):
 
         if self._isAuto == True:
             # keep doing auto translation
-            self._timer = threading.Timer(8.0,self.client_translate)
+            self._timer = threading.Timer(2.0,self.client_translate)
             self._timer.start()  
 
     def client_auto_switch(self):
         global autoSwitchBtn_text
         global bilinSwitchBtn_text
         if self._isAuto == False:
-            self._timer = threading.Timer(8.0,self.client_translate)
+            self._timer = threading.Timer(2.0,self.client_translate)
             self._timer.start()
             self._isAuto = True
             autoSwitchBtn_text.set("Auto Translation OFF")
@@ -226,6 +226,10 @@ class Window(Frame):
             print("binlingual OFF")
 
     def client_exit(self):
+        if self._isAuto == True:
+            self._isAuto = False
+            self._timer.cancel()
+            autoSwitchBtn_text.set("Auto Translation On")
         exit()
 
 dic = Dict()
